@@ -39,8 +39,12 @@ def mmseqs_search_monomer(
     qsc: float = -20.0,
     max_accept: int = 1000000,
     s: float = 8,
+    e: float = 0.1,
+    max_seq_id: float = 0.95,
+    max_seqs: int = 10000,
     db_load_mode: int = 2,
     threads: int = 32,
+    rm_temp: bool = True,
 ):
     """Run mmseqs with a local colabfold database set
 
@@ -78,9 +82,9 @@ def mmseqs_search_monomer(
 
     # fmt: off
     # @formatter:off
-    search_param = ["--num-iterations", "3", "--db-load-mode", str(db_load_mode), "-a", "-s", str(s), "-e", "0.1", "--max-seqs", "10000",]
-    filter_param = ["--filter-msa", str(filter), "--filter-min-enable", "1000", "--diff", str(diff), "--qid", "0.0,0.2,0.4,0.6,0.8,1.0", "--qsc", "0", "--max-seq-id", "0.95",]
-    expand_param = ["--expansion-mode", "0", "-e", str(expand_eval), "--expand-filter-clusters", str(filter), "--max-seq-id", "0.95",]
+    search_param = ["--num-iterations", "3", "--db-load-mode", str(db_load_mode), "-a", "-s", str(s), "-e", str(e), "--max-seqs", str(max_seqs),]
+    filter_param = ["--filter-msa", str(filter), "--filter-min-enable", "1000", "--diff", str(diff), "--qid", "0.0,0.2,0.4,0.6,0.8,1.0", "--qsc", "0", "--max-seq-id", str(max_seq_id),]
+    expand_param = ["--expansion-mode", "0", "-e", str(expand_eval), "--expand-filter-clusters", str(filter), "--max-seq-id", str(max_seq_id),]
 
     run_mmseqs(mmseqs, ["search", base.joinpath("qdb"), dbbase.joinpath(uniref_db), base.joinpath("res"), base.joinpath("tmp"), "--threads", str(threads)] + search_param)
     run_mmseqs(mmseqs, ["expandaln", base.joinpath("qdb"), dbbase.joinpath(f"{uniref_db}{dbSuffix1}"), base.joinpath("res"), dbbase.joinpath(f"{uniref_db}{dbSuffix2}"), base.joinpath("res_exp"), "--db-load-mode", str(db_load_mode), "--threads", str(threads)] + expand_param)
@@ -141,7 +145,8 @@ def mmseqs_search_monomer(
 
     for file in base.glob("prof_res*"):
         file.unlink()
-    shutil.rmtree(base.joinpath("tmp"))
+    if rm_temp:
+        shutil.rmtree(base.joinpath("tmp"))
 
 
 def mmseqs_search_pair(
@@ -346,6 +351,24 @@ def main():
         default=8,
         help="mmseqs sensitivity. Lowering this will result in a much faster search but possibly sparser msas",
     )
+    parser.add_argument(
+        "-e",
+        type=float,
+        default=0.1,
+        help="mmseqs e-value cutoff."
+    )
+    parser.add_argument(
+        "--max-seq-id",
+        type=float,
+        default=0.95,
+        help="max seq id after filter and expand steps"
+    )
+    parser.add_argument(
+        "--max-seqs",
+        type=int,
+        default=10000,
+        help="max seqs after search step"
+    )
     # dbs are uniref, templates and environmental
     # We normally don't use templates
     parser.add_argument(
@@ -375,6 +398,7 @@ def main():
     parser.add_argument("--max-accept", type=int, default=1000000)
     parser.add_argument("--db-load-mode", type=int, default=0)
     parser.add_argument("--threads", type=int, default=64)
+    parser.add_argument("--rm-temp", type=int, default=1, choices=[0, 1])
     args = parser.parse_args()
 
     queries, is_complex = get_queries(args.query, None)
@@ -440,8 +464,12 @@ def main():
         qsc=args.qsc,
         max_accept=args.max_accept,
         s=args.s,
+        e=args.e,
+        max_seq_id=args.max_seq_id,
+        max_seqs=args.max_seqs,
         db_load_mode=args.db_load_mode,
         threads=args.threads,
+        rm_temp=args.rm_temp,
     )
     if is_complex == True:
         mmseqs_search_pair(
