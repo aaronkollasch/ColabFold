@@ -436,6 +436,7 @@ def main():
         default=MSAFormatMode.A3M_WITH_INFO,
         choices=list(MSAFormatMode)
     )
+    parser.add_argument("--no-create-qdb", action="store_true")
     parser.add_argument("--threads", type=int, default=64)
     parser.add_argument("--rm-temp", type=int, default=1, choices=[0, 1])
     args = parser.parse_args()
@@ -470,10 +471,11 @@ def main():
             for seq in query_sequences:
                 f.write(f">{raw_jobname}\n{seq}\n")
 
-    run_mmseqs(
-        args.mmseqs,
-        ["createdb", query_file, args.base.joinpath("qdb"), "--shuffle", "0"],
-    )
+    if not args.no_create_qdb:
+        run_mmseqs(
+            args.mmseqs,
+            ["createdb", query_file, args.base.joinpath("qdb"), "--shuffle", "0"],
+        )
     with args.base.joinpath("qdb.lookup").open("w") as f:
         id = 0
         file_number = 0
