@@ -11,10 +11,24 @@ import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import List, Union
+from enum import Enum
 
 from colabfold.batch import get_queries, msa_to_str
 
 logger = logging.getLogger(__name__)
+
+
+class MSAFormatMode(Enum):
+    CA3M_FORMAT = 0
+    CA3M_WITH_CONSENSUS_DB = 1
+    ALIGNED_FASTA_DB = 2
+    ALIGNED_FASTA_WITH_HEADER = 3
+    STOCKHOLM_FLAT = 4
+    A3M_FORMAT = 5
+    A3M_WITH_INFO = 6
+
+    def __str__(self):
+        return str(self.value)
 
 
 def run_mmseqs(mmseqs: Path, params: List[Union[str, Path]]):
@@ -44,6 +58,7 @@ def mmseqs_search_monomer(
     max_seq_id: float = 0.95,
     max_seqs: int = 10000,
     db_load_mode: int = 2,
+    msa_format_mode: MSAFormatMode = MSAFormatMode.A3M_WITH_INFO,
     threads: int = 32,
     rm_temp: bool = True,
 ):
@@ -101,7 +116,7 @@ def mmseqs_search_monomer(
                         str(threads), "--max-seq-id", "1.0", "--filter-min-enable", "100"])
     run_mmseqs(mmseqs, ["result2msa", base.joinpath("qdb"), dbbase.joinpath(f"{uniref_db}{dbSuffix1}"),
                         base.joinpath("res_exp_realign_filter"), base.joinpath("uniref.a3m"), "--msa-format-mode",
-                        "6", "--db-load-mode", str(db_load_mode), "--threads", str(threads)] + filter_param)
+                        str(msa_format_mode), "--db-load-mode", str(db_load_mode), "--threads", str(threads)] + filter_param)
     subprocess.run([mmseqs] + ["rmdb", base.joinpath("res_exp_realign")])
     subprocess.run([mmseqs] + ["rmdb", base.joinpath("res_exp")])
     subprocess.run([mmseqs] + ["rmdb", base.joinpath("res")])
@@ -125,7 +140,7 @@ def mmseqs_search_monomer(
                             "--max-seq-id", "1.0", "--threads", str(threads), "--filter-min-enable", "100"])
         run_mmseqs(mmseqs, ["result2msa", base.joinpath("qdb"), dbbase.joinpath(f"{metagenomic_db}{dbSuffix1}"),
                             base.joinpath("res_env_exp_realign_filter"),
-                            base.joinpath("bfd.mgnify30.metaeuk30.smag30.a3m"), "--msa-format-mode", "6",
+                            base.joinpath("bfd.mgnify30.metaeuk30.smag30.a3m"), "--msa-format-mode", str(msa_format_mode),
                             "--db-load-mode", str(db_load_mode), "--threads", str(threads)] + filter_param)
 
 
@@ -407,6 +422,12 @@ def main():
     parser.add_argument("--qsc", type=float, default=-20.0)
     parser.add_argument("--max-accept", type=int, default=1000000)
     parser.add_argument("--db-load-mode", type=int, default=0)
+    parser.add_argument(
+        "--msa-format-mode",
+        type=lambda mode: MSAFormatMode(int(mode)),
+        default=MSAFormatMode.A3M_WITH_INFO,
+        choices=list(MSAFormatMode)
+    )
     parser.add_argument("--threads", type=int, default=64)
     parser.add_argument("--rm-temp", type=int, default=1, choices=[0, 1])
     args = parser.parse_args()
@@ -479,6 +500,7 @@ def main():
         max_seq_id=args.max_seq_id,
         max_seqs=args.max_seqs,
         db_load_mode=args.db_load_mode,
+        msa_format_mode=args.msa_format_mode,
         threads=args.threads,
         rm_temp=args.rm_temp,
     )
