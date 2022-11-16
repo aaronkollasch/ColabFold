@@ -57,6 +57,7 @@ def mmseqs_search_monomer(
     e: float = 0.1,
     max_seq_id: float = 0.95,
     max_seqs: int = 10000,
+    min_cov: float = 0.0,
     db_load_mode: int = 2,
     msa_format_mode: MSAFormatMode = MSAFormatMode.A3M_WITH_INFO,
     threads: int = 32,
@@ -99,7 +100,7 @@ def mmseqs_search_monomer(
     # fmt: off
     # @formatter:off
     search_param = ["--num-iterations", str(num_iterations), "--db-load-mode", str(db_load_mode), "-a", "-s", str(s), "-e", str(e), "--max-seqs", str(max_seqs),]
-    filter_param = ["--filter-msa", str(filter), "--filter-min-enable", "1000", "--diff", str(diff), "--qid", "0.0,0.2,0.4,0.6,0.8,1.0", "--qsc", "0", "--max-seq-id", str(max_seq_id),]
+    filter_param = ["--filter-msa", str(filter), "--filter-min-enable", "1000", "--diff", str(diff), "--qid", "0.0,0.2,0.4,0.6,0.8,1.0", "--qsc", "0", "--max-seq-id", str(max_seq_id), "--cov", str(min_cov)]
     expand_param = ["--expansion-mode", "0", "-e", str(expand_eval), "--expand-filter-clusters", str(filter), "--max-seq-id", str(max_seq_id),]
 
     run_mmseqs(mmseqs, ["search", base.joinpath("qdb"), dbbase.joinpath(uniref_db), base.joinpath("res"), base.joinpath("tmp"), "--threads", str(threads)] + search_param)
@@ -394,6 +395,12 @@ def main():
         default=10000,
         help="max seqs after search step"
     )
+    parser.add_argument(
+        "--min-cov",
+        type=float,
+        default=0.0,
+        help="min coverage of query after filter and expand steps"
+    )
     # dbs are uniref, templates and environmental
     # We normally don't use templates
     parser.add_argument(
@@ -499,6 +506,7 @@ def main():
         num_iterations=args.num_iterations,
         max_seq_id=args.max_seq_id,
         max_seqs=args.max_seqs,
+        min_cov=args.min_cov,
         db_load_mode=args.db_load_mode,
         msa_format_mode=args.msa_format_mode,
         threads=args.threads,
