@@ -99,7 +99,7 @@ def mmseqs_search_monomer(
 
     # fmt: off
     # @formatter:off
-    search_param = ["--num-iterations", str(num_iterations), "--db-load-mode", str(db_load_mode), "-a", "-s", str(s), "-e", str(e), "--max-seqs", str(max_seqs),]
+    search_param = ["--num-iterations", str(num_iterations), "--db-load-mode", str(db_load_mode), "-a", "-s", str(s), "-e", str(e), "--max-seqs", str(max_seqs), "-c", str(min_cov), "--cov-mode", "2"]
     filter_param = ["--filter-msa", str(filter), "--filter-min-enable", "1000", "--diff", str(diff), "--qid", "0.0,0.2,0.4,0.6,0.8,1.0", "--qsc", "0", "--max-seq-id", str(max_seq_id), "--cov", str(min_cov)]
     expand_param = ["--expansion-mode", "0", "-e", str(expand_eval), "--expand-filter-clusters", str(filter), "--max-seq-id", str(max_seq_id),]
     align_param = ["-c", str(min_cov), "--cov-mode", "2",]
